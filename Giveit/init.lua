@@ -1,12 +1,12 @@
 --[[
     Created by Eqplayer16
-    v.1.0
+    v.1.1
 
     Giveit is a lua script to trade items and coin with slash commands
     
     Available Commands
-    giveit item [pc/npc] [name] [itemName]
-        -Use quotes around the itemName if there are spaces
+    giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]
+        -Use quotes around the itemName if there are spaces. Quantity will default to 1 if not used, which will trade Whole stacks of stackable items
     giveit coin [pc/npc] [name] [plat/gold] [amount/all]
         -using 'all' for the amount will trade the entire amount of that coin type
 
@@ -43,16 +43,26 @@ end
 
 local WaitTime = 750
 
-local function Give(itemName)
+local function Give(itemName, qty)
     if mq.TLO.FindItem(itemName).ID() ~= nil then
 		local itemSlot = mq.TLO.FindItem(itemName).ItemSlot()
 		local itemSlot2 = mq.TLO.FindItem(itemName).ItemSlot2()
 		local pickup1 = itemSlot - 22
 		local pickup2 = itemSlot2 + 1
-		mq.cmd('/shift /itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
-		mq.delay(WaitTime, CheckCursor)
-		mq.cmd('/click left target')
-		mq.delay(WaitTime, CursorEmpty)
+        --grab the whole stack, or specific amount
+        if qty > 1 and mq.TLO.FindItem(itemName).StackCount() >= 1 then
+            mq.cmd('/itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
+            mq.delay(WaitTime)
+            mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. qty)
+            mq.delay(WaitTime)
+            mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
+		else
+            mq.cmd('/shift /itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
+        end
+        --Trade it
+        mq.delay(WaitTime, CheckCursor)
+        mq.cmd('/click left target')
+        mq.delay(WaitTime, CursorEmpty)
     end
 end
 
@@ -70,7 +80,7 @@ end
 -- script functions
 local function print_usage()
     Write.Info('\agAvailable Commands - ')
-    Write.Info('\a-g/giveit item [pc/npc] [name] [itemName]\a-t - Use quotes around items with spaces')
+    Write.Info('\a-g/giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]\a-t - Use quotes around items with spaces')
     Write.Info('\a-g/giveit coin [pc/npc] [name] [plat/gold] [amount]\a-t - use "all" for the amount to trade entire stack')
 end
 
@@ -85,7 +95,11 @@ local function bind_giveit(cmd, type, name, itemName, amt)
 
     -- item
     if cmd == 'item' and type ~= nil and name ~= nil and itemName ~= nil then
-
+        --If quantity is empty, set it to 1
+        local quantity = 1
+        if amt ~= nil then
+            quantity = tonumber(amt)
+        end
 		PRINTMETHOD('Opening Inventory')
 		mq.TLO.Window('InventoryWindow').DoOpen()
 		mq.delay(1500, InventoryOpen)
@@ -99,7 +113,7 @@ local function bind_giveit(cmd, type, name, itemName, amt)
 			NavToTrade(name)
 		end
 
-		Give(itemName)
+		Give(itemName, quantity)
 
 		mq.delay(WaitTime)
 		mq.cmd('/notify TradeWnd TRDW_Trade_Button leftmouseup')
@@ -109,7 +123,6 @@ local function bind_giveit(cmd, type, name, itemName, amt)
 
     -- item
     if cmd == 'coin' and type ~= nil and name ~= nil and itemName ~= nil and amt ~= nil then
-
 		PRINTMETHOD('Opening Inventory')
 		mq.TLO.Window('InventoryWindow').DoOpen()
 		mq.delay(1500, InventoryOpen)
