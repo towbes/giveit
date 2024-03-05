@@ -15,7 +15,6 @@
         -Gives an amount of plat to all raid members
 
     ToDo: 
-    - Implement trading multiple items at once
     - Give every player in group/raid X item
 
 
