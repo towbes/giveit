@@ -145,6 +145,7 @@ local function print_usage()
     Write.Info('\agAvailable Commands - ')
     Write.Info('\a-g/giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]\a-t - Use quotes around items with spaces')
     Write.Info('\a-g/giveit coin [pc/npc] [name] [plat/gold] [amount]\a-t - use "all" for the amount to trade entire stack')
+    Write.Info('\a-g/giveit raid coin plat [amount]\a-t')
 end
 
 -- binds
@@ -202,56 +203,40 @@ local function bind_giveit(cmd, val1, val2, val3, val4)
     end
 
     -- raid
-    if cmd == 'raid' and type ~= nil and name ~= nil and itemName ~= nil and amt ~= nil then
-		PRINTMETHOD('Opening Inventory')
-		mq.TLO.Window('InventoryWindow').DoOpen()
-		mq.delay(1500, InventoryOpen)
-
-		PRINTMETHOD('Targetting %s', name)
-		mq.cmd('/target "' .. name .. '" ' .. type)
-		mq.delay(2000, HaveTarget)
-		mq.cmd('/face')
-
-		if mq.TLO.Spawn(name).Distance3D() > 20 then
-			NavToTrade(name)
-		end
-
-        if itemName == 'plat' then
-            if mq.TLO.Me.Platinum() >= 1 then
-                if amt == 'all' then
-                    mq.cmd('/shift /notify InventoryWindow IW_Money0 leftmouseup')
-                else
-                    mq.cmd('/notify InventoryWindow IW_Money0 leftmouseup')
-                    mq.delay(WaitTime)
-                    mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. amt)
-                    mq.delay(WaitTime)
-                    mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
-                end
-                mq.delay(WaitTime, CheckCursor)
-                mq.cmd('/click left target')
-                mq.delay(WaitTime, CursorEmpty)
+    if cmd == 'raid' then
+        local cmd2 = val1
+        if cmd2 == 'coin' then
+            local spawntype = 'pc'
+            local itemName = 'plat'
+            local amt = val3
+            --Return if no amount entered
+            if amt == nil then
+                print_usage()
+                return
             end
-        elseif itemName == 'gold' then
-            if mq.TLO.Me.Gold() >= 1 then
-                if amt == 'all' then
-                    mq.cmd('/shift /notify InventoryWindow IW_Money1 leftmouseup')
-                else
-                    mq.cmd('/notify InventoryWindow IW_Money1 leftmouseup')
-                    mq.delay(WaitTime)
-                    mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. amt)
-                    mq.delay(WaitTime)
-                    mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
+
+            --Open inventory
+            OpenInventory()
+
+            --For each raid member
+            local raidMemberCount = mq.TLO.Raid.Members()
+            for i=1,raidMemberCount do
+                if mq.TLO.Me.CleanName() ~= mq.TLO.Raid.Member(i).CleanName() then 
+
+                    NavTarget(mq.TLO.Raid.Member(i).CleanName(), spawntype)
+
+                    GiveCoin(itemName, amt)
+        
+                    ClickTrade()
+
                 end
-                mq.delay(WaitTime, CheckCursor)
-                mq.cmd('/click left target')
-                mq.delay(WaitTime, CursorEmpty)
             end
+
+        else
+            print_usage()    
         end
-
-		mq.delay(WaitTime)
-		mq.cmd('/notify TradeWnd TRDW_Trade_Button leftmouseup')
-		mq.delay(WaitTime)
-
+    else
+        print_usage()
     end
 
 end
