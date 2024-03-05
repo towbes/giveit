@@ -7,6 +7,8 @@
     Available Commands
     giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]
         -Use quotes around the itemName if there are spaces. Quantity will default to 1 if not used, which will trade Whole stacks of stackable items
+    giveit itemlist [pc/npc] [name] {[itemName] [quantity] .. }
+        -Provide a list of itemName quantity to trade. Max 4 for NPCs, and 8 for PCs
     giveit coin [pc/npc] [name] [plat/gold] [amount/all]
         -using 'all' for the amount will trade the entire amount of that coin type
     giveit raid coin plat [amount]
@@ -50,12 +52,12 @@ local WaitTime = 750
 
 local function Give(itemName, qty)
     if mq.TLO.FindItem(itemName).ID() ~= nil then
-		local itemSlot = mq.TLO.FindItem(itemName).ItemSlot()
-		local itemSlot2 = mq.TLO.FindItem(itemName).ItemSlot2()
+		local itemSlot = mq.TLO.FindItem('='..itemName).ItemSlot()
+		local itemSlot2 = mq.TLO.FindItem('='..itemName).ItemSlot2()
 		local pickup1 = itemSlot - 22
 		local pickup2 = itemSlot2 + 1
         --grab the whole stack, or specific amount
-        if qty > 1 and mq.TLO.FindItem(itemName).StackCount() >= 1 then
+        if qty > 1 and mq.TLO.FindItem('='..itemName).StackCount() >= 1 then
             mq.cmd('/itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
             mq.delay(WaitTime)
             mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. qty)
@@ -149,7 +151,13 @@ local function print_usage()
 end
 
 -- binds
-local function bind_giveit(cmd, val1, val2, val3, val4)
+local function bind_giveit(...)
+    local args = {...}
+    for i,arg in ipairs(args) do
+        printf('arg[%d]: %s', i, arg)
+    end
+
+    local cmd = args[1]
 
     -- usage
     if cmd == nil then 
@@ -159,10 +167,10 @@ local function bind_giveit(cmd, val1, val2, val3, val4)
 
     -- item
     if cmd == 'item' then
-        local spawntype = val1
-        local name = val2
-        local itemName = val3
-        local amt = val4
+        local spawntype = args[2]
+        local name = args[3]
+        local itemName = args[4]
+        local amt = args[5]
         if spawntype ~= nil and name ~= nil and itemName ~= nil then
             --If quantity is empty, set it to 1
             local quantity = 1
@@ -184,10 +192,10 @@ local function bind_giveit(cmd, val1, val2, val3, val4)
 
     -- item
     if cmd == 'coin' then
-        local spawntype = val1
-        local name = val2
-        local itemName = val3
-        local amt = val4
+        local spawntype = args[2]
+        local name = args[3]
+        local itemName = args[4]
+        local amt = args[5]
         if spawntype ~= nil and name ~= nil and itemName ~= nil and amt ~= nil then
             OpenInventory()
 
@@ -196,19 +204,16 @@ local function bind_giveit(cmd, val1, val2, val3, val4)
             GiveCoin(itemName, amt)
 
             ClickTrade()
-        else
-            print_usage() 
         end
-
     end
 
     -- raid
     if cmd == 'raid' then
-        local cmd2 = val1
+        local cmd2 = args[2]
         if cmd2 == 'coin' then
             local spawntype = 'pc'
             local itemName = 'plat'
-            local amt = val3
+            local amt = args[4]
             --Return if no amount entered
             if amt == nil then
                 print_usage()
@@ -231,12 +236,7 @@ local function bind_giveit(cmd, val1, val2, val3, val4)
 
                 end
             end
-
-        else
-            print_usage()    
         end
-    else
-        print_usage()
     end
 
 end
