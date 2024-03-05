@@ -57,7 +57,8 @@ local function Give(itemName, qty)
 		local pickup1 = itemSlot - 22
 		local pickup2 = itemSlot2 + 1
         --grab the whole stack, or specific amount
-        if qty > 1 and mq.TLO.FindItem('='..itemName).StackCount() >= 1 then
+        if qty ~= 'all' and mq.TLO.FindItem('='..itemName).StackCount() >= 1 then
+            qty = tonumber(qty)
             mq.cmd('/itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
             mq.delay(WaitTime)
             mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. qty)
@@ -66,7 +67,7 @@ local function Give(itemName, qty)
 		else
             mq.cmd('/shift /itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
         end
-        --Trade it
+        --Give it
         mq.delay(WaitTime, CheckCursor)
         mq.cmd('/click left target')
         mq.delay(WaitTime, CursorEmpty)
@@ -146,6 +147,7 @@ end
 local function print_usage()
     Write.Info('\agAvailable Commands - ')
     Write.Info('\a-g/giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]\a-t - Use quotes around items with spaces')
+    Write.Info('\a-g/giveit itemlist [pc/npc] [name] {[itemName] [quantity] .. }\a-t = Provide a list of itemName quantity to trade. Max 4 for NPCs, and 8 for PCs')
     Write.Info('\a-g/giveit coin [pc/npc] [name] [plat/gold] [amount]\a-t - use "all" for the amount to trade entire stack')
     Write.Info('\a-g/giveit raid coin plat [amount]\a-t')
 end
@@ -153,9 +155,10 @@ end
 -- binds
 local function bind_giveit(...)
     local args = {...}
-    for i,arg in ipairs(args) do
-        printf('arg[%d]: %s', i, arg)
-    end
+    --Debug commands
+    --for i,arg in ipairs(args) do
+    --    printf('arg[%d]: %s', i, arg)
+    --end
 
     local cmd = args[1]
 
@@ -173,9 +176,9 @@ local function bind_giveit(...)
         local amt = args[5]
         if spawntype ~= nil and name ~= nil and itemName ~= nil then
             --If quantity is empty, set it to 1
-            local quantity = 1
+            local quantity = 'all'
             if amt ~= nil then
-                quantity = tonumber(amt)
+                quantity = amt
             end
             OpenInventory()
             NavTarget(name, spawntype)
@@ -190,7 +193,49 @@ local function bind_giveit(...)
 
     end
 
-    -- item
+    -- item list
+    -- giveit itemlist [pc/npc] [name] {[itemName] [quantity] .. }
+    if cmd == 'itemlist' then
+        local spawntype = args[2]
+        local name = args[3]
+
+        --check for correct number of args
+        if spawntype == 'pc' and args[20] ~= nil then print_usage() return end
+        if spawntype == 'npc' and args[12] ~= nil then print_usage() return end
+
+        OpenInventory()
+        NavTarget(name, spawntype)
+
+        --PCs have max 8 items in trade window
+        if spawntype == 'pc' then
+
+            local loop = 1
+            while loop < 16 do
+                local itemName = args[loop+3]
+                local amt = args[loop+4]
+                if itemName ~= nil and amt ~= nil then
+                    Give(itemName, amt)
+                end
+                loop = loop+2
+            end
+        --NPCs have max 4 items in trade window
+        else 
+            local loop = 1
+            while loop < 8 do
+                local itemName = args[loop+3]
+                local amt = args[loop+4]
+                if itemName ~= nil and amt ~= nil then
+                    Give(itemName, amt)
+                end
+                loop = loop+2
+            end
+        end
+
+        ClickTrade()
+
+    end
+
+    -- coins
     if cmd == 'coin' then
         local spawntype = args[2]
         local name = args[3]
