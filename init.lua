@@ -121,9 +121,12 @@ local function GiveAltCoin(itemName, amt)
         -- pull some out.
         PRINTMETHOD("Not enough %s in inventory - attempting to pull %d from AltCurrTab", itemName, needCount)
         local tabPage = mq.TLO.Window("InventoryWindow").Child("IW_Subwindows")
-        if tabPage.CurrentTab.Name() ~= "IW_AltCurrPage" then
+        while tabPage.CurrentTab.Name() ~= "IW_AltCurrPage" do
             tabPage.SetCurrentTab(4)
+            mq.delay(10)
         end
+
+        mq.delay(500)
 
         local currencyList = mq.TLO.Window("InventoryWindow").Child("IW_AltCurr_PointList")
         local createButton = mq.TLO.Window("InventoryWindow").Child("IW_AltCurr_CreateItemButton")
@@ -133,8 +136,11 @@ local function GiveAltCoin(itemName, amt)
             if not currentItem then break end
 
             if currentItem:find(itemName) then
-                currencyList.Select(currencyListId)
-                mq.delay(50)
+                ---@diagnostic disable-next-line: undefined-field
+                while currencyList.SelectedIndex() ~= currencyListId do
+                    currencyList.Select(currencyListId)
+                    mq.delay(50)
+                end
 
                 while not mq.TLO.Window("QuantityWnd").Open() do
                     createButton.LeftMouseUp()
@@ -142,12 +148,23 @@ local function GiveAltCoin(itemName, amt)
                 end
 
                 if amt ~= "all" then
-                    mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").SetText(tostring(needCount))
+                    local countStr = tostring(needCount)
+                    while mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").Text() ~= countStr do
+                        mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").SetText(countStr)
+                        mq.delay(50)
+                    end
                 end
+
                 mq.delay(500)
-                mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
-                mq.cmd("/timed 1 /autoinv")
-                mq.delay(500, function() return mq.TLO.Cursor.ID() == nil end)
+
+                while mq.TLO.Window("QuantityWnd").Open() do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
+                    mq.delay(50)
+                end
+
+                while mq.TLO.Cursor.ID() ~= nil do
+                    mq.cmd("/autoinv")
+                end
                 break
             end
         end
@@ -169,6 +186,7 @@ local function GiveAltCoin(itemName, amt)
     end
 
     -- if we got here we have enough.
+    printf("Moving to Final GiveItem")
     Give(itemName, amt)
 end
 
