@@ -186,7 +186,6 @@ local function GiveAltCoin(itemName, amt)
     end
 
     -- if we got here we have enough.
-    printf("Moving to Final GiveItem")
     Give(itemName, amt)
 end
 
