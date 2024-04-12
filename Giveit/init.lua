@@ -5,11 +5,17 @@
     Giveit is a lua script to trade items and coin with slash commands
     
     Available Commands
-    giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]
+    giveit item [pc/npc] [name/target] [itemName] [quantity (optional, default=1 or all of a stack)]
+        -Use quotes around the itemName if there are spaces. Quantity will default to 1 if not used, which will trade Whole stacks of stackable items
+    giveit item target [itemName] [quantity (optional, default=1 or all of a stack)]
         -Use quotes around the itemName if there are spaces. Quantity will default to 1 if not used, which will trade Whole stacks of stackable items
     giveit itemlist [pc/npc] [name] {[itemName] [quantity] .. }
         -Provide a list of itemName quantity to trade. Max 4 for NPCs, and 8 for PCs
+    giveit itemlist target {[itemName] [quantity] .. }
+        -Provide a list of itemName quantity to trade. Max 4 for NPCs, and 8 for PCs
     giveit coin [pc/npc] [name] [plat/gold] [amount/all]
+        -using 'all' for the amount will trade the entire amount of that coin type
+    giveit coin target [plat/gold] [amount/all]
         -using 'all' for the amount will trade the entire amount of that coin type
     giveit raid coin plat [amount]
         -Gives an amount of plat to all raid members
@@ -146,8 +152,11 @@ end
 local function print_usage()
     Write.Info('\agAvailable Commands - ')
     Write.Info('\a-g/giveit item [pc/npc] [name] [itemName] [quantity (optional, default=1 or all of a stack)]\a-t - Use quotes around items with spaces')
+    Write.Info('\a-g/giveit item target [itemName] [quantity (optional, default=1 or all of a stack)]\a-t - Use quotes around items with spaces')
     Write.Info('\a-g/giveit itemlist [pc/npc] [name] {[itemName] [quantity] .. }\a-t = Provide a list of itemName quantity to trade. Max 4 for NPCs, and 8 for PCs')
+    Write.Info('\a-g/giveit itemlist target {[itemName] [quantity] .. }\a-t = Provide a list of itemName quantity to trade. Max 4 for NPCs, and 8 for PCs')
     Write.Info('\a-g/giveit coin [pc/npc] [name] [plat/gold] [amount]\a-t - use "all" for the amount to trade entire stack')
+    Write.Info('\a-g/giveit coin target [plat/gold] [amount]\a-t - use "all" for the amount to trade entire stack')
     Write.Info('\a-g/giveit raid coin plat [amount]\a-t')
 end
 
@@ -162,17 +171,37 @@ local function bind_giveit(...)
     local cmd = args[1]
 
     -- usage
-    if cmd == nil then 
+    if cmd == nil or args[2] == nil then
         print_usage() 
         return
     end
 
+    --Check if they used target first
+    local name = nil
+    local spawntype = args[2]
+    local itemName = nil
+    local amt = nil
+    --If the use target, subtract one from the rest of the args in the original command
+    local argmod = 0
+    if spawntype == 'target' then
+        if not mq.TLO.Target() then
+            Write.Info('\a-gYou do not have a target')
+            return
+        end
+        name = mq.TLO.Target.CleanName()
+        spawntype = mq.TLO.Target.Type()
+        argmod = 1
+    end
     -- item
     if cmd == 'item' then
-        local spawntype = args[2]
-        local name = args[3]
-        local itemName = args[4]
-        local amt = args[5]
+        --Check if they used target first
+        if not name then
+            --they did not use target, so get the name arg
+            name = args[3]
+        end
+        itemName = args[4-argmod]
+        amt = args[5-argmod]
+
         if spawntype ~= nil and name ~= nil and itemName ~= nil then
             --If quantity is empty, set it to 1
             local quantity = 'all'
@@ -195,12 +224,17 @@ local function bind_giveit(...)
     -- item list
     -- giveit itemlist [pc/npc] [name] {[itemName] [quantity] .. }
     if cmd == 'itemlist' then
-        local spawntype = args[2]
-        local name = args[3]
+        --Check if they used target first
+        if not name then
+            --they did not use target, so get the name arg
+            name = args[3]
+        end
+        itemName = args[4-argmod]
+        amt = args[5-argmod]
 
         --check for correct number of args
-        if spawntype == 'pc' and args[20] ~= nil then print_usage() return end
-        if spawntype == 'npc' and args[12] ~= nil then print_usage() return end
+        if spawntype:lower() == 'pc' and args[20-argmod] ~= nil then print_usage() return end
+        if spawntype:lower() == 'npc' and args[12-argmod] ~= nil then print_usage() return end
 
         OpenInventory()
         NavTarget(name, spawntype)
@@ -210,8 +244,8 @@ local function bind_giveit(...)
 
             local loop = 1
             while loop < 16 do
-                local itemName = args[loop+3]
-                local amt = args[loop+4]
+                local itemName = args[loop+3-argmod]
+                local amt = args[loop+4-argmod]
                 if itemName ~= nil and amt ~= nil then
                     Give(itemName, amt)
                 end
@@ -221,8 +255,8 @@ local function bind_giveit(...)
         else 
             local loop = 1
             while loop < 8 do
-                local itemName = args[loop+3]
-                local amt = args[loop+4]
+                local itemName = args[loop+3-argmod]
+                local amt = args[loop+4-argmod]
                 if itemName ~= nil and amt ~= nil then
                     Give(itemName, amt)
                 end
@@ -236,10 +270,14 @@ local function bind_giveit(...)
 
     -- coins
     if cmd == 'coin' then
-        local spawntype = args[2]
-        local name = args[3]
-        local itemName = args[4]
-        local amt = args[5]
+        --Check if they used target first
+        if not name then
+            --they did not use target, so get the name arg
+            name = args[3]
+        end
+        itemName = args[4-argmod]
+        amt = args[5-argmod]
+
         if spawntype ~= nil and name ~= nil and itemName ~= nil and amt ~= nil then
             OpenInventory()
 
