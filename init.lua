@@ -63,12 +63,16 @@ local function Give(itemName, qty)
         local pickup2 = itemSlot2 + 1
         --grab the whole stack, or specific amount
         if qty ~= 'all' and mq.TLO.FindItem('=' .. itemName).StackCount() >= 1 then
-            qty = tonumber(qty)
             mq.cmd('/itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
             mq.delay(WaitTime)
-            mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. qty)
-            mq.delay(WaitTime)
-            mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
+            while mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").Text() ~= qty do
+                mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").SetText(qty)
+                mq.delay(WaitTime)
+            end
+            while mq.TLO.Window("QuantityWnd").Open() do
+                mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
+                mq.delay(50)
+            end
         else
             mq.cmd('/shift /itemnotify in pack' .. pickup1 .. ' ' .. pickup2 .. ' leftmouseup')
         end
@@ -83,13 +87,21 @@ local function GiveCoin(itemName, amt)
     if itemName == 'plat' then
         if mq.TLO.Me.Platinum() >= 1 then
             if amt == 'all' then
-                mq.cmd('/shift /notify InventoryWindow IW_Money0 leftmouseup')
+                mq.TLO.Window("InventoryWindow").Child("IW_Money0").LeftMouseUp()
+                while mq.TLO.Window("QuantityWnd").Open() do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
+                    mq.delay(50)
+                end
             else
-                mq.cmd('/notify InventoryWindow IW_Money0 leftmouseup')
-                mq.delay(WaitTime)
-                mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. amt)
-                mq.delay(WaitTime)
-                mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
+                mq.TLO.Window("InventoryWindow").Child("IW_Money0").LeftMouseUp()
+                while mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").Text() ~= amt do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").SetText(amt)
+                    mq.delay(WaitTime)
+                end
+                while mq.TLO.Window("QuantityWnd").Open() do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
+                    mq.delay(50)
+                end
             end
             mq.delay(WaitTime, CheckCursor)
             mq.cmd('/click left target')
@@ -98,13 +110,21 @@ local function GiveCoin(itemName, amt)
     elseif itemName == 'gold' then
         if mq.TLO.Me.Gold() >= 1 then
             if amt == 'all' then
-                mq.cmd('/shift /notify InventoryWindow IW_Money1 leftmouseup')
+                mq.TLO.Window("InventoryWindow").Child("IW_Money1").LeftMouseUp()
+                while mq.TLO.Window("QuantityWnd").Open() do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
+                    mq.delay(50)
+                end
             else
-                mq.cmd('/notify InventoryWindow IW_Money1 leftmouseup')
-                mq.delay(WaitTime)
-                mq.cmd('/notify QuantityWnd QTYW_Slider newvalue ' .. amt)
-                mq.delay(WaitTime)
-                mq.cmd('/notify QuantityWnd QTYW_Accept_Button leftmouseup')
+                mq.TLO.Window("InventoryWindow").Child("IW_Money1").LeftMouseUp()
+                while mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").Text() ~= amt do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_SliderInput").SetText(amt)
+                    mq.delay(WaitTime)
+                end
+                while mq.TLO.Window("QuantityWnd").Open() do
+                    mq.TLO.Window("QuantityWnd").Child("QTYW_Accept_Button").LeftMouseUp()
+                    mq.delay(50)
+                end
             end
             mq.delay(WaitTime, CheckCursor)
             mq.cmd('/click left target')
@@ -197,7 +217,7 @@ end
 
 local function ClickTrade()
     mq.delay(WaitTime)
-    mq.cmd('/notify TradeWnd TRDW_Trade_Button leftmouseup')
+    mq.TLO.Window("TradeWnd").Child("TRDW_Trade_Button").LeftMouseUp()
     mq.delay(WaitTime)
 end
 
