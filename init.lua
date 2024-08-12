@@ -142,8 +142,13 @@ local function GiveAltCoin(itemName, amt)
         PRINTMETHOD("Not enough %s in inventory - attempting to pull %d from AltCurrTab", itemName, needCount)
         local tabPage = mq.TLO.Window("InventoryWindow").Child("IW_Subwindows")
         while tabPage.CurrentTab.Name() ~= "IW_AltCurrPage" do
-            tabPage.SetCurrentTab(4)
-            mq.delay(10)
+            for i = 1, 5 do
+                tabPage.SetCurrentTab(i)
+                mq.delay(10)
+                if tabPage.CurrentTab.Name() == "IW_AltCurrPage" then break end
+            end
+            -- tabPage.SetCurrentTab(4)
+            -- mq.delay(10)
         end
 
         mq.delay(500)
@@ -200,7 +205,7 @@ local function GiveAltCoin(itemName, amt)
             return
         end
     end
-
+    Give(itemName, amt)
     if amt == "all" then
         amt = mq.TLO.FindItemCount(itemName)()
     end
@@ -324,15 +329,15 @@ local function bind_giveit(...)
             --they did not use target, so get the name arg
             name = args[3]
         end
-        itemName = args[4 - argmod]
-        amt = args[5 - argmod]
+        --itemName = args[4 - argmod]  -- No need to predefine itemName here
+        --amt = args[5 - argmod]        -- No need to predefine amt here
 
         --check for correct number of args
-        if spawntype:lower() == 'pc' and args[20 - argmod] ~= nil then
+        if spawntype:lower() == 'pc' and args[19 - argmod] ~= nil then
             print_usage()
             return
         end
-        if spawntype:lower() == 'npc' and args[12 - argmod] ~= nil then
+        if spawntype:lower() == 'npc' and args[11 - argmod] ~= nil then
             print_usage()
             return
         end
@@ -341,26 +346,15 @@ local function bind_giveit(...)
         NavTarget(name, spawntype)
 
         --PCs have max 8 items in trade window
-        if spawntype == 'pc' then
-            local loop = 1
-            while loop < 16 do
-                local itemName = args[loop + 3 - argmod]
-                local amt = args[loop + 4 - argmod]
-                if itemName ~= nil and amt ~= nil then
-                    Give(itemName, amt)
-                end
-                loop = loop + 2
-            end
-            --NPCs have max 4 items in trade window
-        else
-            local loop = 1
-            while loop < 8 do
-                local itemName = args[loop + 3 - argmod]
-                local amt = args[loop + 4 - argmod]
-                if itemName ~= nil and amt ~= nil then
-                    Give(itemName, amt)
-                end
-                loop = loop + 2
+        local maxItems = spawntype:lower() == 'pc' and 8 or 4
+        for i = 4, 3 + 2 * maxItems - argmod, 2 do
+            local itemName = args[i]
+            itemName = itemName:gsub('"', ''):gsub("{", "")
+            if itemName == '}' then break end
+            local amt = args[i + 1] or 'all'
+            printf('itemName: %s, amt: %s', itemName, amt)
+            if itemName then
+                Give(itemName, amt)
             end
         end
 
