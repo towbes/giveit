@@ -240,7 +240,7 @@ end
 
 local function NavTarget(name, spawntype)
     PRINTMETHOD('Targetting %s', name)
-    mq.cmd('/target "' .. name .. '" ' .. spawntype)
+    mq.cmd('/target ="' .. name .. '" ' .. spawntype)
     mq.delay(2000, HaveTarget)
     mq.cmd('/face')
 
